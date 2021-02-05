@@ -1,20 +1,26 @@
 package grpc
-/*
-"github.com/idylicaro/full-cycle-immersive/codepix-go/application/grpc/pb"
-	"github.com/idylicaro/full-cycle-immersive/codepix-go/application/usecase"
-	"github.com/idylicaro/full-cycle-immersive/codepix-go/infrastructure/repository"
-	"google.golang.org/grpc/reflection"
-*/
+
 import (
 	"fmt"
-	"github.com/jinzhu/gorm"
-	"google.golang.org/grpc"
 	"log"
 	"net"
+
+	"github.com/idylicaro/full-cycle-immersive/codepix-go/application/grpc/pb"
+	"github.com/idylicaro/full-cycle-immersive/codepix-go/application/usecase"
+	"github.com/idylicaro/full-cycle-immersive/codepix-go/infrastructure/repository"
+	"github.com/jinzhu/gorm"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/reflection"
 )
 
 func StartGrpcServer(database *gorm.DB, port int) {
 	grpcServer := grpc.NewServer()
+	reflection.Register(grpcServer)
+
+	pixRepository := repository.PixKeyRepositoryDb{Db: database}
+	pixUseCase := usecase.PixUseCase{PixKeyRepository: pixRepository}
+	pixGrpcService := NewPixGrpcService(pixUseCase)
+	pb.RegisterPixServiceServer(grpcServer, pixGrpcService)
 
 	address := fmt.Sprintf("0.0.0.0:%d", port)
 	listener, err := net.Listen("tcp", address)
